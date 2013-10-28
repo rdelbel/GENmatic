@@ -3,7 +3,8 @@
 \title{Fit genetic models}
 \usage{
   GENfit(outcome, covariates = NULL, strata = NULL,
-    type = "coxph", mcore = F, fout = NULL)
+    type = "coxph", mcore = F, fout = NULL,
+    bfilename = "GENmatic")
 }
 \arguments{
   \item{outcome}{length 2 vector corresponding to time and

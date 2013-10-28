@@ -1,5 +1,5 @@
-parse_reportRx.log<-function(geno=F,mind=F,maf=F,hh=F){
-  con  <- file("reportRx.log", open = "r")
+parse_GENmatic.log<-function(geno=F,mind=F,maf=F,hh=F){
+  con  <- file("GENmatic.log", open = "r")
   result<-c(0,0,0,0)
   while (length(oneLine <- readLines(con, n = 1, warn = FALSE)) > 0) {
     if(length(out<-str_split(oneLine," markers to be included from")[[1]])>1)
@@ -40,22 +40,22 @@ parse_reportRx.log<-function(geno=F,mind=F,maf=F,hh=F){
 #'@param cutoff numeric indicating the MAF cutoff to use
 #'@export
 remove_maf<-function(cutoff=0.05){
-  reportRxGWASQCcount<<-reportRxGWASQCcount+1
-  cat(paste0("\\section*{",reportRxGWASQCcount,
+  GENmaticGWASQCcount<<-GENmaticGWASQCcount+1
+  cat(paste0("\\section*{",GENmaticGWASQCcount,
              ": Identification of SNPs with low Minor Allele Frequency}"),
       "All SNPs with MAF$\\leq$",cutoff," were removed. ")
-  system("plink --noweb --bfile reportRx --freq --out reportRx")
-  maf <- read.table("reportRx.frq",h=T,comment.char="`",stringsAsFactors=F);
+  system("plink --noweb --bfile GENmatic --freq --out GENmatic")
+  maf <- read.table("GENmatic.frq",h=T,comment.char="`",stringsAsFactors=F);
   maf_remove = maf[maf$MAF<0.05,2]
   if(length(maf_remove)>0){
     cat(length(maf_remove),"SNPs were removed this way.")
     
     write.table(maf_remove,"maf_remove.txt",quote=FALSE,col.names=F,row.names=F)  
-    system(paste("plink --noweb --bfile reportRx --maf",cutoff,"--out reportRx --make-bed"))
+    system(paste("plink --noweb --bfile GENmatic --maf",cutoff,"--out GENmatic --make-bed"))
   }else{
     cat("There were no such SNPs.")
   }
-  QCsummary<<-rbind(QCsummary,c("Low MAF",parse_reportRx.log(maf=T)))
+  QCsummary<<-rbind(QCsummary,c("Low MAF",parse_GENmatic.log(maf=T)))
   
   hist(maf$MAF,main="MAF distribution",xlim=c(0,0.5),ylim=c(0,250000),axes=F,xlab="Minor Allele Frequency",ylab="Frequency",col="blue")
   axis(1,at=c(0,0.1,0.2,0.3,0.4,0.5),labels=c(0,0.1,0.2,0.3,0.4,0.5));
@@ -68,22 +68,22 @@ remove_maf<-function(cutoff=0.05){
 #' 
 #' Looks in current directory for dirty.bed dirty.fam dirty.bin.
 #' Reads these files to get initial data. Saves new files as
-#' reportRx.bed/fam/bin so that we do not modify origional data
+#' GENmatic.bed/fam/bin so that we do not modify origional data
 #' Sets up 2 secret global variables for the rest of the QC process.
 #' This function takes no paramaters
 #' @keywords GWAS
 #' @export
 initiate_QC<-function(){
   cat("\\section*{1: Identification of Heterozygous Haploid Genotypes} All Heterozygous Haploid Genotypes were removed. ")      
-  system("plink --noweb --bfile dirty --set-hh-missing --out reportRx  --make-bed")
-  result <- t(data.frame(parse_reportRx.log(), stringsAsFactors = F))
+  system("plink --noweb --bfile dirty --set-hh-missing --out GENmatic  --make-bed")
+  result <- t(data.frame(parse_GENmatic.log(), stringsAsFactors = F))
   result <- data.frame("Start", result, stringsAsFactors = F)
   colnames(result) <- c("Step", "Individual Removed", "Individual Remaining", 
                         "SNP Removed", "SNP Remaining")
   rownames(result) <- NULL
-  result<-rbind(result,c("Heterozygous Haploid",parse_reportRx.log(hh=T)))
+  result<-rbind(result,c("Heterozygous Haploid",parse_GENmatic.log(hh=T)))
   QCsummary <<- result
-  reportRxGWASQCcount <<- 1
+  GENmaticGWASQCcount <<- 1
   
   cat(ifelse(QCsummary[2,3]=="0","No",QCsummary[2,4]), "snps were removed this way")
 }
@@ -111,8 +111,8 @@ remove_missing_pheno<-function(){
   }else
     write.table(cbind(notIDvalue,as.character(pheno[,1])),"keep.txt",quote=F,col.names=F,row.names=F)
   plinkdataname<-get_filename(filenames,"bed")
-  system("plink --noweb --bfile reportRx --keep keep.txt --make-bed --out reportRx")
-  QCsummary<<-rbind(QCsummary,c("Missing Phenotype",parse_reportRx.log()))
+  system("plink --noweb --bfile GENmatic --keep keep.txt --make-bed --out GENmatic")
+  QCsummary<<-rbind(QCsummary,c("Missing Phenotype",parse_GENmatic.log()))
 }
 #' Remove people with sex problems
 #' 
@@ -120,23 +120,23 @@ remove_missing_pheno<-function(){
 #' @keywords GWAS
 #' @export
 remove_sex_problems<-function(){
-  reportRxGWASQCcount<<-reportRxGWASQCcount+1
-  cat(paste0("\\section*{",reportRxGWASQCcount,": Identification of individuals with discordant sex information}"))  
+  GENmaticGWASQCcount<<-GENmaticGWASQCcount+1
+  cat(paste0("\\section*{",GENmaticGWASQCcount,": Identification of individuals with discordant sex information}"))  
   
-  system("plink --noweb --bfile reportRx --check-sex --out reportRx")  
-  sexcheck<-read.table("reportRx.sexcheck",header=T)
+  system("plink --noweb --bfile GENmatic --check-sex --out GENmatic")  
+  sexcheck<-read.table("GENmatic.sexcheck",header=T)
   SexProblems<-which(sexcheck$STATUS=="PROBLEM")
   if(length(SexProblems)==0){
-    log<-parse_reportRx.log()
+    log<-parse_GENmatic.log()
     QCsummary<<-rbind(QCsummary,c("Sex Problems",c(0,log[2],0,log[4])))
   }else if(length(SexProblems)==nrow(sexcheck)){
     warning("No sex information in genotype")
-    log<-parse_reportRx.log()
+    log<-parse_GENmatic.log()
     QCsummary<<-rbind(QCsummary,c("Sex Problems",c(log[2],0,0,log[4])))
   }else{
     write.table(sexcheck[SexProblems,c(1,2)],"SexProblems.txt",quote=F,row.names=F,col.names=F)
-    system("plink --noweb --bfile reportRx --remove SexProblems.txt --make-bed --out reportRx")
-    QCsummary<<-rbind(QCsummary,c("Sex Problems",parse_reportRx.log()))
+    system("plink --noweb --bfile GENmatic --remove SexProblems.txt --make-bed --out GENmatic")
+    QCsummary<<-rbind(QCsummary,c("Sex Problems",parse_GENmatic.log()))
   }
   cat("This option uses X chromosome data to determine sex (i.e. based on heterozygosity rates) and flags individuals for whom the reported sex in the PED file does not match the estimated sex (given genomic data).\\\\")
   if(length(SexProblems)!=0){
@@ -156,26 +156,26 @@ remove_sex_problems<-function(){
 #'  @keywords GWAS
 #'  @export 
 remove_missing<-function(snp.cutoff=0.05,individual.cutoff=0.05){
-  reportRxGWASQCcount<<-reportRxGWASQCcount+1
-  cat(paste0("\\section*{",reportRxGWASQCcount,": Identification of individuals/markers with a high missing rate}"))  
+  GENmaticGWASQCcount<<-GENmaticGWASQCcount+1
+  cat(paste0("\\section*{",GENmaticGWASQCcount,": Identification of individuals/markers with a high missing rate}"))  
   
-  system("plink --noweb --bfile reportRx --missing --out reportRx")
-  lmiss<-read.table("reportRx.lmiss",stringsAsFactors=F,colClasses=c("character","character","numeric","numeric","numeric"),header=T,comment.char = "`")
+  system("plink --noweb --bfile GENmatic --missing --out GENmatic")
+  lmiss<-read.table("GENmatic.lmiss",stringsAsFactors=F,colClasses=c("character","character","numeric","numeric","numeric"),header=T,comment.char = "`")
   fully_missing_snps<-length(lmiss[,5][lmiss[,5]==1])
   missing_snps<-length(lmiss[,5][lmiss[,5]>=0.05])-fully_missing_snps
-  log<-parse_reportRx.log()
+  log<-parse_GENmatic.log()
   QCsummary<<-rbind(QCsummary,c("Fully Missing Snps",c(0,log[2],fully_missing_snps,log[4]-fully_missing_snps)))
   QCsummary<<-rbind(QCsummary,c(paste0(snp.cutoff*100,"% Missing Snps"),c(0,log[2],missing_snps,log[4]-fully_missing_snps-missing_snps)))
-  system(paste("plink --noweb --bfile reportRx --geno",snp.cutoff,"--out reportRx --make-bed"))  
-  #   system("plink --noweb --bfile reportRx --geno 0.05 --out reportRx")
-  #   system("sed '303342q;d' reportRx.lmiss")
-  #   system("sed '303343q;d' reportRx.lmiss")
-  #   system("sed '303344q;d' reportRx.lmiss")
-  #   system("sed '303345q;d' reportRx.lmiss")
-  #   system("sed '303346q;d' reportRx.lmiss")
-  #   system("awk 'NR==303342q{print;exit}' reportRx.lmiss")
-  system(paste("plink --noweb --bfile reportRx --mind",individual.cutoff,"--out reportRx --make-bed"))
-  log<-parse_reportRx.log(mind=T)
+  system(paste("plink --noweb --bfile GENmatic --geno",snp.cutoff,"--out GENmatic --make-bed"))  
+  #   system("plink --noweb --bfile GENmatic --geno 0.05 --out GENmatic")
+  #   system("sed '303342q;d' GENmatic.lmiss")
+  #   system("sed '303343q;d' GENmatic.lmiss")
+  #   system("sed '303344q;d' GENmatic.lmiss")
+  #   system("sed '303345q;d' GENmatic.lmiss")
+  #   system("sed '303346q;d' GENmatic.lmiss")
+  #   system("awk 'NR==303342q{print;exit}' GENmatic.lmiss")
+  system(paste("plink --noweb --bfile GENmatic --mind",individual.cutoff,"--out GENmatic --make-bed"))
+  log<-parse_GENmatic.log(mind=T)
   QCsummary<<-rbind(QCsummary,c(paste0(individual.cutoff*100,"% missing individuals"),log))
   cat(paste0(ifelse(fully_missing_snps==0,"No",fully_missing_snps),
              " SNPs in the dataset are 100\\% missing",ifelse(fully_missing_snps==0,".",", which were removed from the data first."), 
@@ -184,8 +184,8 @@ remove_missing<-function(snp.cutoff=0.05,individual.cutoff=0.05){
              " Next Individuals with more than ",individual.cutoff*100," \\% SNPs missing were removed. ",ifelse(log[1]==0,"No",log[1]),
              " individuals were removed under this criterion.\\\\"))
   
-  system("plink --noweb --bfile reportRx --missing --out reportRx")
-  imiss<-read.table("reportRx.imiss",stringsAsFactors=F,header=T,comment.char = "`")
+  system("plink --noweb --bfile GENmatic --missing --out GENmatic")
+  imiss<-read.table("GENmatic.imiss",stringsAsFactors=F,header=T,comment.char = "`")
   
   lmiss$logF_MISS = log10(lmiss$F_MISS);
   ## frequency plot
@@ -215,28 +215,28 @@ remove_missing<-function(snp.cutoff=0.05,individual.cutoff=0.05){
 #' @keywords GWAS
 #' @export 
 remove_relatives<-function(cutoff=0.25){
-  reportRxGWASQCcount<<-reportRxGWASQCcount+1
-  cat(paste0("\\section*{",reportRxGWASQCcount,": Identification of duplicated or related individuals}"),
+  GENmaticGWASQCcount<<-GENmaticGWASQCcount+1
+  cat(paste0("\\section*{",GENmaticGWASQCcount,": Identification of duplicated or related individuals}"),
       "To detect duplicated or related individuals, identity by state is calculated for each pair of individuals. If two individuals are identified as relatives, as defined by having IBS$\\geq$",cutoff," the one with the higher sample number was removed.") 
   
-  #system("plink --noweb --bfile reportRx --genome --out reportRx")
-  ibs = read.table("reportRx.genome",header=T,stringsAsFactors=F)
+  #system("plink --noweb --bfile GENmatic --genome --out GENmatic")
+  ibs = read.table("GENmatic.genome",header=T,stringsAsFactors=F)
   ibs<-ibs[ibs$PI_HAT >= cutoff,c(1,2,3,4,10),drop=F]
   if(nrow(ibs)!=0){
     first_degree_relatives<-ibs[,c(3,4)]
     write.table(first_degree_relatives,"first_degree_relatives.txt",quote=FALSE,col.names=F,row.names=F)
-    system("plink --noweb --bfile reportRx  --remove first_degree_relatives.txt --out reportRx --make-bed")
+    system("plink --noweb --bfile GENmatic  --remove first_degree_relatives.txt --out GENmatic --make-bed")
     cat("People Removed in this step are in bold and listed in the following table.")
     colnames(ibs)
     colnames(ibs)<-sanitizestr(colnames(ibs))
     ibs<-sapply(ibs,function(cols)sanitizestr(cols))
     ibs[,c(3,4)]<-sapply(ibs[,c(3,4)],lbld)
     print.xtable(xtable(ibs),include.rownames=F,table.placement="H",sanitize.text.function=identity)
-    #QCsummary[7,-1]<<-parse_reportRx.log()
-    QCsummary<<-rbind(QCsummary,c("Related Individuals",parse_reportRx.log()))
+    #QCsummary[7,-1]<<-parse_GENmatic.log()
+    QCsummary<<-rbind(QCsummary,c("Related Individuals",parse_GENmatic.log()))
     
   }else{
-    log<-parse_reportRx.log()
+    log<-parse_GENmatic.log()
     #QCsummary[7,-1]<<-c(0,log[2],0,log[4])
     QCsummary<<-rbind(QCsummary,c("Related Individuals",c(0,log[2],0,log[4])))
     cat("No indivudals were identified as relatives") 
@@ -252,18 +252,18 @@ remove_relatives<-function(cutoff=0.25){
 #' @keywords GWAS
 #' @export 
 remove_heterozygocity<-function(SD=6){
-  reportRxGWASQCcount<<-reportRxGWASQCcount+1
-  cat(paste0("\\section*{",reportRxGWASQCcount,": Identification of individuals with outlying heterozygosity rate}"))  
+  GENmaticGWASQCcount<<-GENmaticGWASQCcount+1
+  cat(paste0("\\section*{",GENmaticGWASQCcount,": Identification of individuals with outlying heterozygosity rate}"))  
   
   cat("The outliers in the heterozygosity rate might be indicative of DNA sample contamination or inbreeding.
       The following plot shows the heterozygosity rate of the individuals in our CRC data, and the horizontal dashed lines represent",SD,"standard deviations from the mean.\\\\")
-  system("plink --noweb --bfile reportRx --het --out reportRx")
-  system("plink --noweb --bfile reportRx --missing --out reportRx")
+  system("plink --noweb --bfile GENmatic --het --out GENmatic")
+  system("plink --noweb --bfile GENmatic --missing --out GENmatic")
   
   
-  imiss <- read.table("reportRx.imiss",h=T);
+  imiss <- read.table("GENmatic.imiss",h=T);
   imiss$logF_MISS = log10(imiss$F_MISS);
-  het=read.table("reportRx.het",h=T);
+  het=read.table("GENmatic.het",h=T);
   
   het$meanHet = (het$N.NM. - het$O.HOM.)/het$N.NM.;
   
@@ -283,32 +283,32 @@ remove_heterozygocity<-function(SD=6){
   hetero_remove<-het[het$meanHet<low | het$meanHet>high, c("FID","IID")]
   if(nrow(hetero_remove)>0){
     write.table(hetero_remove,"hetero_remove.txt",quote=FALSE,col.names=F,row.names=F);
-    system("plink --noweb --bfile reportRx --remove hetero_remove.txt --out reportRx --make-bed")
-    #QCsummary[7,-1]<<-parse_reportRx.log()  
-    QCsummary<<-rbind(QCsummary,c(paste0("Heterozygocity Rate (-/+ ",SD,"SD)"),parse_reportRx.log()))
+    system("plink --noweb --bfile GENmatic --remove hetero_remove.txt --out GENmatic --make-bed")
+    #QCsummary[7,-1]<<-parse_GENmatic.log()  
+    QCsummary<<-rbind(QCsummary,c(paste0("Heterozygocity Rate (-/+ ",SD,"SD)"),parse_GENmatic.log()))
     cat("\n","The following people were removed for having heterozygosity rate",SD,"standard deviations form the mean:")
     print.xtable(xtable(hetero_remove),table.placement="H",include.rownames=F)
   }else{
-    log<-parse_reportRx.log()
+    log<-parse_GENmatic.log()
     QCsummary<<-rbind(QCsummary,c(paste0("Heterozygocity Rate (-/+ ",SD,"SD)"),0,log[2],0,log[4]))
     cat("No patients had heterozygosity rate",SD,"standard deviations form the mean")
   }
   
 }
 prepare_hapmap<-function(){
-  #   system("plink --noweb --bfile reportRx --indep-pairwise 50 5 0.2 --out reportRxHM")
-  # system("plink --noweb --bfile reportRxHM --extract reportRxHM.prune.in --recode --out reportRxHM") 
+  #   system("plink --noweb --bfile GENmatic --indep-pairwise 50 5 0.2 --out GENmaticHM")
+  # system("plink --noweb --bfile GENmaticHM --extract GENmaticHM.prune.in --recode --out GENmaticHM") 
   #   system("plink --noweb --file hapmap3 --filter-founders --recode --make-bed --out hapmap")
-  #   system("plink --noweb --bfile hapmap --extract reportRxHM.prune.in --make-bed --out hapmap")
+  #   system("plink --noweb --bfile hapmap --extract GENmaticHM.prune.in --make-bed --out hapmap")
   #   system("awk '{print $2}' hapmap.bim > commonsnp.txt")
-  #   system("plink --noweb --file reportRxHM --extract commonsnp.txt --make-bed --out reportRxHM")
-  #   system("plink --noweb --bfile reportRxHM --bmerge hapmap.bed hapmap.bim hapmap.fam --make-bed --out hapmap")
+  #   system("plink --noweb --file GENmaticHM --extract commonsnp.txt --make-bed --out GENmaticHM")
+  #   system("plink --noweb --bfile GENmaticHM --bmerge hapmap.bed hapmap.bim hapmap.fam --make-bed --out hapmap")
   #   system("plink --noweb --bfile hapmap1 --flip gwashapmap.missnp --make-bed --out hapmap2")
   # /plink --noweb --bfile hapmap2 --freq --out hapmapfreq
   # /plink --noweb --bfile gwas10 --freq --out gwasfreq
   
-  system("plink --noweb --bfile reportRx --indep-pairwise 50 5 0.2 --out gwas8")
-  system("plink --noweb --bfile reportRx --extract gwas8.prune.in --recode --out gwas9")
+  system("plink --noweb --bfile GENmatic --indep-pairwise 50 5 0.2 --out gwas8")
+  system("plink --noweb --bfile GENmatic --extract gwas8.prune.in --recode --out gwas9")
   system("plink --noweb --file hapmaporigional --filter-founders --recode --make-bed --out hapmap")
   #1457897 markers, 1198 founders 
   #extract gwas independent SNPs: 160500 SNPS totally
@@ -344,8 +344,8 @@ prepare_hapmap<-function(){
 #' Outputs summary of QC process. There are no paramaters.
 #' @export
 end_QC<-function(){
-  reportRxGWASQCcount<<-reportRxGWASQCcount+1
-  cat(paste0("\\section*{",reportRxGWASQCcount,": Summary of QC}"))  
+  GENmaticGWASQCcount<<-GENmaticGWASQCcount+1
+  cat(paste0("\\section*{",GENmaticGWASQCcount,": Summary of QC}"))  
   cat("After all QC we have",QCsummary[nrow(QCsummary),3], "individuals, and",QCsummary[nrow(QCsummary),5], "SNPs remaining.\\\\")
   #OQC<<-QCsummary
   temp3<-rep(F,nrow(QCsummary))

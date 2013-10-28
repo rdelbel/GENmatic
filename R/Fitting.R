@@ -128,11 +128,12 @@ a<-paste(a1,a2,a3,a4,a5,a6,sep="\n")
 #'@param mcore Dont use this
 #'@param fout string corresponding to the directory you want to output the 
 #'Rplink.R file. Default (write to working directory) is NULL.
-GENfit<-function(outcome,covariates=NULL,strata=NULL,type="coxph",mcore=F,fout=NULL){
+#'@export
+GENfit<-function(outcome,covariates=NULL,strata=NULL,type="coxph",mcore=F,fout=NULL,bfilename="GENmatic"){
   if(type=="coxph"){
     makeRplink(outcome,covariates,strata,mcore,fout)
     if(mcore)require(multicore)
     require(Rserve)
     Rserve(args="--no-save")
-    system("plink --noweb --bfile GENmatic --covar covar.txt --pheno pheno.txt --R Rplink.R --out gwas")
+    system(paste0("plink --noweb --bfile ",bfilename," --covar covar.txt --pheno pheno.txt --R Rplink.R --out ",bfilename))
   }}
