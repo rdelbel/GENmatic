@@ -1,0 +1,15 @@
+Package: GENmatic
+Type: Package
+Title: Fast and Automated Genetic Reporting and Analysis
+Version: 1.0
+Date: 2013-10-28
+Author: Ryan Del Bel
+Maintainer: Ryan Del Bel <rdelbel@gmail.com>
+Description: Fast and Automated Genetic Reporting and Analysis
+License: GPL-2
+Collate:
+    'Fitting.R'
+    'GWASQC.R'
+Imports:
+    xtable,
+    stringr
