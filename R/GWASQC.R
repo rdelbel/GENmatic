@@ -74,7 +74,7 @@ remove_maf<-function(cutoff=0.05){
 #' @keywords GWAS
 #' @export
 initiate_QC<-function(){
-  cat("\\section*{1: Identification of Heterozygous Haploid Genotypes} All Heterozygous Haploid Genotypes were removed.")      
+  cat("\\section*{1: Identification of Heterozygous Haploid Genotypes} All Heterozygous Haploid Genotypes were removed. ")      
   system("plink --noweb --bfile dirty --set-hh-missing --out reportRx  --make-bed")
   result <- t(data.frame(parse_reportRx.log(), stringsAsFactors = F))
   result <- data.frame("Start", result, stringsAsFactors = F)
@@ -85,7 +85,7 @@ initiate_QC<-function(){
   QCsummary <<- result
   reportRxGWASQCcount <<- 1
   
-  cat(ifelse(QCsummary[2,3]=="0","No",QCsummary[2,3]), "snps were removed this way")
+  cat(ifelse(QCsummary[2,3]=="0","No",QCsummary[2,4]), "snps were removed this way")
 }
 
 remove_missing_pheno<-function(){
