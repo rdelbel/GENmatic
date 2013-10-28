@@ -24,13 +24,13 @@ makeRplink<-function(outcome,covariates=NULL,strata=NULL,mcore=F,fout=NULL){
   makeRplinkinput<-function(x){
     if(is.null(x)) return(NULL)
     x<-as.character(x)
-    x<-sapply(x,function(y){
+    sapply(x,function(y){
       z<-gsub("[0-9]","",y)
       if(nchar(z)==0)
         return(y)
-      return(paste0("\"",y,"\""))})            
-  }
-  
+      return(which(covarnames==y))           
+  })}
+  covarnames<-names(read.table("covar.txt",header=T))[-c(1,2)]
   outcome<-makeRplinkinput(outcome)
   strata<-makeRplinkinput(strata)
   covariates<-makeRplinkinput(covariates)
