@@ -134,5 +134,5 @@ GENfit<-function(outcome,covariates=NULL,strata=NULL,type="coxph",mcore=F,fout=N
     if(mcore)require(multicore)
     require(Rserve)
     Rserve(args="--no-save")
-    system("plink --noweb --bfile thinned --covar covar.txt --covar-number 1-5 --pheno pheno.txt --R Rplink.R --out gwas")
+    system("plink --noweb --bfile GENmatic --covar covar.txt --pheno pheno.txt --R Rplink.R --out gwas")
   }}
