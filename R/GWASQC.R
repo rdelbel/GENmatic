@@ -218,8 +218,8 @@ remove_relatives<-function(cutoff=0.25){
   GENmaticGWASQCcount<<-GENmaticGWASQCcount+1
   cat(paste0("\\section*{",GENmaticGWASQCcount,": Identification of duplicated or related individuals}"),
       "To detect duplicated or related individuals, identity by state is calculated for each pair of individuals. If two individuals are identified as relatives, as defined by having IBS$\\geq$",cutoff," the one with the higher sample number was removed.") 
-  
-  #system("plink --noweb --bfile GENmatic --genome --out GENmatic")
+  system("plink --noweb --bfile GENmatic --indep 50 5 2 --out GENmatic")
+  system("plink --noweb --bfile GENmatic --extract GENmatic.prune.in --genome --out GENmatic")
   ibs = read.table("GENmatic.genome",header=T,stringsAsFactors=F)
   ibs<-ibs[ibs$PI_HAT >= cutoff,c(1,2,3,4,10),drop=F]
   if(nrow(ibs)!=0){
