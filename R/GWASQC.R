@@ -85,7 +85,7 @@ initiate_QC<-function(ifile,pd=""){
   colnames(result) <- c("Step", "Individual Removed", "Individual Remaining", 
                         "SNP Removed", "SNP Remaining")
   rownames(result) <- NULL
-  result=result[-1,]
+  #result=result[-1,]
   #result<-rbind(result,c("Heterozygous Haploid",parse_GENmatic.log(hh=T)))
   QCsummary <<- result
   GENmaticGWASQCcount <<- 0
