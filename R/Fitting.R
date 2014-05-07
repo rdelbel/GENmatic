@@ -243,7 +243,7 @@ GENwincox<-function(outcome,covariates,strata,kind,ifile,ofile,pd="",wd=""){
 #'@param pd Directory that plink is located in. Only specify if it is not in your path
 #'@param wd Directory that all input/output files live in. By default the current R working directory is used.
 #'@export
-#'@import rserve
+#'@import Rserve
 
 plinkfit<-function(ifile,ofile=NULL,type,covar,pd,wd){
   if(is.null(ofile)) ofile=ifile
