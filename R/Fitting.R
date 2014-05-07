@@ -9,7 +9,7 @@ px<-function(x)
 #'Make Rplink.txt file
 #'
 #'Makes Rplink.txt file for fash coxph gwas. 
-#'#'Any element of the outcome,strata, or null vectors will correspond to either 
+#'Any element of the outcome,strata, or null vectors will correspond to either 
 #'the column index (not including the 2 id columns) or column name of the 
 #'corresponding covaraite in the covar.txt file. Any element of these vectors will 
 #'be treated as an index if it consists of the digits 0-9 and will be considered
@@ -27,6 +27,7 @@ px<-function(x)
 #'@param kind additive/dominant/recessive
 #'@param wd string corresponding to the directory you want to output the 
 #'Rplink.R file to. Default is to the current working directory
+#'@param cname the name of the plink covariate file (no extension) default is covar
 #'
 #'@export
 #'@import xtable stringr
@@ -121,6 +122,7 @@ a<-paste(a1,a2,a3,a4,a5,a6,sep="\n")
   sink()
 
 }
+
 #'Extract data from plink bfile into a Data Frame
 #'
 #'Extracts data from a plink bfile into a Data Frame for use in R.
@@ -132,7 +134,9 @@ a<-paste(a1,a2,a3,a4,a5,a6,sep="\n")
 #'@param snps A vector of snps that will be in the dataframe. By default all snps will be selected
 #'@param pd directory of plink. Use only if plink is not in your path
 #'@param wd directory that all files are located in. Is by default set to the current R working directory
+#'
 #'@export
+
 plinktoR<-function(ifile,ofile=NULL,snps=NULL,pd="",wd=""){
   if(is.null(ofile)) ofile=ifile
   if(is.null(snps)){
@@ -145,6 +149,7 @@ plinktoR<-function(ifile,ofile=NULL,snps=NULL,pd="",wd=""){
   colnames(table)[-c(1,2)]=sapply(colnames(table)[-c(1,2)],function(name)substr(name,1,nchar(name)-2))
   return(table)
 }
+
 #' Fit coxph genetic analysis on windows. 
 #' 
 #' This function uses R so probably not a good idea to use it on a GWAS. It calls coxph directly from C
@@ -154,7 +159,6 @@ plinktoR<-function(ifile,ofile=NULL,snps=NULL,pd="",wd=""){
 #'@param covariates vector/Dataframe corresponding to confounding factors. Default
 #'(no covariates) is NULL
 #'@param strata vector corresponding to stratification variable.Default is no strata.
-#'
 #'@param ifile String corresponding to the name of the plink bfile (no extension)
 #'@param ofile String corresponding to the name of the resulting files
 #'@param pd directory of plink. Use only if plink is not in your path
@@ -227,8 +231,21 @@ GENwincox<-function(outcome,covariates,strata,kind,ifile,ofile,pd="",wd=""){
   return(merge(bpchr,fitted,by="SNP"))
 }
 
+#' Use plink to fit models
+#' 
+#' Use plink to fit models. If covariates are to be used assumes that pheno and covar
+#'  files exist and are in the form ofile_pheno.txt and ofile_covar.txt. If coxph is
+#'  to be used assumes ofile_Rplink.R exists and the system is unix
+#'  
+#'@param ifile String corresponding to the name of bed/bim/fam plink files. 
+#'@param ofile String corresponding to the name of the resulting files. Default is ifile
+#'@param type type of analysis (coxph, linear, logistic)
+#'@param pd Directory that plink is located in. Only specify if it is not in your path
+#'@param wd Directory that all input/output files live in. By default the current R working directory is used.
+#'@export
 
-plinkfit<-function(ifile,ofile,type,covar,pd,wd){
+plinkfit<-function(ifile,ofile=NULL,type,covar,pd,wd){
+  if(is.null(ofile)) ofile=ifile
   if(type=="coxph"){
     if(.Platform$OS.type=="windows") stop("can not use plink to fix coxph on windows")
     require(Rserve)
@@ -275,6 +292,7 @@ plinkfit<-function(ifile,ofile,type,covar,pd,wd){
 #'@param pd Directory that plink is located in. Only specify if it is not in your path
 #'@param wd Directory that all input/output files live in. By default the current R working directory is used.
 #'@export
+#'@import survival
 GENfit<-function(id,outcome,covariates=NULL,strata=NULL,type,kind="additive",
                  ifile="GENmatic",ofile="GENmatic",qq=F,manhattan=F,topn=10,topprop=0,topcut=0,pd="",wd=""){
   if(!type%in%c("coxph","logistic","linear"))
@@ -330,7 +348,7 @@ GENfit<-function(id,outcome,covariates=NULL,strata=NULL,type,kind="additive",
   write.table(a,finalfile,row.names=F,quote=F)   
     if(manhattan) manhattan(finalfile)
     if(qq) qq(finalfile)    
-    topsnps(finalfile,ofile,wd,topn=topn,topprop=topprop,topcut=topcut)  
+    topsnps(finalfile,ofile,topn=topn,topprop=topprop,topcut=topcut,wd=wd)  
  unlink(c(paste0(wd,ifile,".frq"),paste0(wd,ifile,".nosex"),paste0(wd,ifile,".hwe"),paste0(wd,ifile,".log")))
 }
 
@@ -341,7 +359,7 @@ GENfit<-function(id,outcome,covariates=NULL,strata=NULL,type,kind="additive",
 #'
 #'@param type What kind of model you want to make the files for. Currently can use coxph, linear, logistic
 #'@param id datframe corresponding to the 2 column id used in the .fam file
-#'@param dataframe of covariates wanted in the model. Do not include intercept term. Make sure all factors are actually factors
+#'@param outcomedataframe of covariates wanted in the model. Do not include intercept term. Make sure all factors are actually factors
 #'@param strata vector of stratification status. Only applicable for coxph
 #'@param cname name of outputed covar file. Default is covar
 #'@param pname name of outputed phenotype file. Default is pheno
@@ -415,18 +433,31 @@ make_covar_pheno<-function(type,id,outcome,covar=NULL,strata=NULL,cname="covar",
   }
 } 
 
-qq<-function(ifile,...){
+#' Create a qq plot of genetic analysis p-values
+#' 
+#' Create a qq plot of genetic analysis p-values
+#' @param ifile the name of the output file of the genetic analysis
+#' @param title title of plot
+#' @param ... arguments to go into plot
+#' @export
+qq<-function(ifile,title="qq plot of p-values",...){
   results=read.table(ifile,head=T)
   obs=sort(results[,"P"],decreasing=F)
 ept=c(1:length(obs))/(length(obs))
-plot(-log10(ept),-log10(obs),col=4,xlab="Expected -log10(pvalue)",ylab="Observed -log10(pvalue)",...)
+plot(-log10(ept),-log10(obs),col=4,xlab="Expected -log10(pvalue)",ylab="Observed -log10(pvalue)",title=title,...)
 abline(0,1,col="red")
 }
-
+#' Create a qq plot of genetic analysis p-values
+#' 
+#' Create a qq plot of genetic analysis p-values
+#' @param ifile the name of the output file of the genetic analysis
+#' @param title title of plot
+#' @param ... arguments to go into gap::mhtplot
+#' @export
+#' @import gap
 manhattan<-function(ifile,title="Manhattan Plot",...){
 gwas<-read.table(ifile,header=T)
 d<-gwas[complete.cases(gwas),c("CHR", "BP","P")]
-
 ord <- order(d$CHR,d$BP)
 d <- d[ord,]
 top=ceiling(-log10(min(d[,"P"])))
@@ -443,7 +474,9 @@ title(title)
 abline(h=0)
 }
 
-#' Returns a dataframe with information about each snp
+#' Returns a dataframe with descriptive information about each snp
+#'
+#' Returns a dataframe with descriptive information about each snp
 #'@param ifile String corresponding to the name of the plink bfile you want to summarize (no extension)
 #'@param pd directory of plink. Use only if plink is not in your path
 #'@param wd directory that all files are located in. Is by default set to the current R working directory
@@ -465,16 +498,19 @@ pts<-function(data){
   digits(xt)=c(rep(2,ncol(data)),8)
   print.xtable(xt,include.rownames=F,table.placement="H")
 }
-
+#' Summarize top snp information
+#' 
+#' Summarize top snp information. Can get top n snps, a proportion of top snps, or all snps with p-values
+#' less than a specified cutoff. Each option will write to a unique file
 #'@param ifile String corresponding to the name of the results file you want to get the top snps from
 #'@param ofile String corresponding to the name of the resulting files (by default same as ifile)
-#'@param pd directory of plink. Use only if plink is not in your path
-#'@param wd directory that all files are located in. Is by default set to the current R working directory
 #'@param topn Specify how many snps you want to retreive
 #'@param topprop specifiy what proportion of snps you want to retreive
 #'@param topcut specify the p-value cutoff you want to retreive
+#'@param wd directory that all files are located in. Is by default set to the current R working directory
+
 #'@export
-topsnps<-function(ifile,ofile=NULL,wd="",topn=0,topprop=0,topcut=0){
+topsnps<-function(ifile,ofile=NULL,topn=0,topprop=0,topcut=0,wd=""){
   if(topprop>1 | topprop<0) stop("topprop must be between 0 and 1")
   if(is.null(ofile)) ofile=ifile
   data=read.table(ifile,header=T,stringsAsFactors=F)
