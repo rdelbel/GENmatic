@@ -3,7 +3,11 @@
 \alias{initiate_QC}
 \title{Initialize GWAS Quality Control}
 \usage{
-initiate_QC()
+initiate_QC(ifile, pd = "")
+}
+\arguments{
+\item{pd}{directory where plink is. Do not need to specify if plink is in your path
+or working directory}
 }
 \description{
 Looks in current directory for dirty.bed dirty.fam dirty.bin.

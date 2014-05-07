@@ -38,20 +38,22 @@ parse_GENmatic.log<-function(geno=F,mind=F,maf=F,hh=F){
 #'Removes all snps with MAF below cutoff
 #'
 #'@param cutoff numeric indicating the MAF cutoff to use
+#' @param pd directory where plink is. Do not need to specify if plink is in your path
+#' or working directory
 #'@export
-remove_maf<-function(cutoff=0.05){
+remove_maf<-function(cutoff=0.05,pd=""){
   GENmaticGWASQCcount<<-GENmaticGWASQCcount+1
   cat(paste0("\\section*{",GENmaticGWASQCcount,
              ": Identification of SNPs with low Minor Allele Frequency}"),
       "All SNPs with MAF$\\leq$",cutoff," were removed. ")
-  system("plink --noweb --bfile GENmatic --freq --out GENmatic")
+  ossystem(paste0(pd,"plink --noweb --bfile GENmatic --freq --out GENmatic"))
   maf <- read.table("GENmatic.frq",h=T,comment.char="`",stringsAsFactors=F);
   maf_remove = maf[maf$MAF<0.05,2]
   if(length(maf_remove)>0){
     cat(length(maf_remove),"SNPs were removed this way.")
     
     write.table(maf_remove,"maf_remove.txt",quote=FALSE,col.names=F,row.names=F)  
-    system(paste("plink --noweb --bfile GENmatic --maf",cutoff,"--out GENmatic --make-bed"))
+    ossystem(paste0(pd,"plink --noweb --bfile GENmatic --maf ",cutoff," --out GENmatic --make-bed"))
   }else{
     cat("There were no such SNPs.")
   }
@@ -71,11 +73,13 @@ remove_maf<-function(cutoff=0.05){
 #' GENmatic.bed/fam/bin so that we do not modify origional data
 #' Sets up 2 secret global variables for the rest of the QC process.
 #' This function takes no paramaters
+#' @param pd directory where plink is. Do not need to specify if plink is in your path
+#' or working directory
 #' @keywords GWAS
 #' @export
-initiate_QC<-function(){
+initiate_QC<-function(ifile,pd=""){
   cat("\\section*{1: Identification of Heterozygous Haploid Genotypes} All Heterozygous Haploid Genotypes were removed. ")      
-  system("plink --noweb --bfile dirty --set-hh-missing --out GENmatic  --make-bed")
+  ossystem(paste0(pd,"plink --noweb --bfile ",ifile," --set-hh-missing --out GENmatic  --make-bed"))
   result <- t(data.frame(parse_GENmatic.log(), stringsAsFactors = F))
   result <- data.frame("Start", result, stringsAsFactors = F)
   colnames(result) <- c("Step", "Individual Removed", "Individual Remaining", 
@@ -88,42 +92,46 @@ initiate_QC<-function(){
   cat(ifelse(QCsummary[2,3]=="0","No",QCsummary[2,4]), "snps were removed this way")
 }
 
-remove_missing_pheno<-function(){
-  
-  filenames<-system("ls",intern=T)
-  filenames<-filenames[grepl(".",filenames,fixed=T)]
-  filenames<-split_filenames(filenames)
-  pheno<-read.csv(paste0(get_filename(filenames,"csv"),".csv"))
-  fam=get_filename(filenames,"fam",T)
-  findID<-matrix(unlist(str_split(system(paste("head -2", fam),intern=T),fixed(" "))),nrow=2,byrow=T)[,c(1,2)]
-  ID<-which(apply(findID,2,function(x)length(unique(x)))>1)
-  notID<-setdiff(c(1,2),ID)
-  notIDvalue<-findID[1,notID]
-  if(length(ID)==2){
-    print(ID)
-    if(length(unique(ID))==1){
-      write.table(cbind(as.character(pheno[,1]),notIDvalue),"keep.txt",quote=F,col.names=F,row.names=F)
-    }else
-      stop("fam file ID makes no sense")
-  }
-  else if(ID==1){
-    write.table(cbind(as.character(pheno[,1]),notIDvalue),"keep.txt",quote=F,col.names=F,row.names=F)
-  }else
-    write.table(cbind(notIDvalue,as.character(pheno[,1])),"keep.txt",quote=F,col.names=F,row.names=F)
-  plinkdataname<-get_filename(filenames,"bed")
-  system("plink --noweb --bfile GENmatic --keep keep.txt --make-bed --out GENmatic")
-  QCsummary<<-rbind(QCsummary,c("Missing Phenotype",parse_GENmatic.log()))
-}
+
+# remove_missing_pheno<-function(pd=""){
+#   
+#   filenames<-system("ls",intern=T)
+#   filenames<-filenames[grepl(".",filenames,fixed=T)]
+#   filenames<-split_filenames(filenames)
+#   pheno<-read.csv(paste0(get_filename(filenames,"csv"),".csv"))
+#   fam=get_filename(filenames,"fam",T)
+#   findID<-matrix(unlist(str_split(system(paste("head -2", fam),intern=T),fixed(" "))),nrow=2,byrow=T)[,c(1,2)]
+#   ID<-which(apply(findID,2,function(x)length(unique(x)))>1)
+#   notID<-setdiff(c(1,2),ID)
+#   notIDvalue<-findID[1,notID]
+#   if(length(ID)==2){
+#     print(ID)
+#     if(length(unique(ID))==1){
+#       write.table(cbind(as.character(pheno[,1]),notIDvalue),"keep.txt",quote=F,col.names=F,row.names=F)
+#     }else
+#       stop("fam file ID makes no sense")
+#   }
+#   else if(ID==1){
+#     write.table(cbind(as.character(pheno[,1]),notIDvalue),"keep.txt",quote=F,col.names=F,row.names=F)
+#   }else
+#     write.table(cbind(notIDvalue,as.character(pheno[,1])),"keep.txt",quote=F,col.names=F,row.names=F)
+#   plinkdataname<-get_filename(filenames,"bed")
+#   ossystem(paste0(pd,"plink --noweb --bfile GENmatic --keep keep.txt --make-bed --out GENmatic"))
+#   QCsummary<<-rbind(QCsummary,c("Missing Phenotype",parse_GENmatic.log()))
+# }
+
 #' Remove people with sex problems
 #' 
-#' Remove people with sex problems. This function takes no paramaters.
+#' Remove people with sex problems.
+#' @param pd directory where plink is. Do not need to specify if plink is in your path
+#' or working directory
 #' @keywords GWAS
 #' @export
-remove_sex_problems<-function(){
+remove_sex_problems<-function(pd=""){
   GENmaticGWASQCcount<<-GENmaticGWASQCcount+1
   cat(paste0("\\section*{",GENmaticGWASQCcount,": Identification of individuals with discordant sex information}"))  
   
-  system("plink --noweb --bfile GENmatic --check-sex --out GENmatic")  
+  ossystem(paste0(pd,"plink --noweb --bfile GENmatic --check-sex --out GENmatic"))
   sexcheck<-read.table("GENmatic.sexcheck",header=T)
   SexProblems<-which(sexcheck$STATUS=="PROBLEM")
   if(length(SexProblems)==0){
@@ -135,7 +143,7 @@ remove_sex_problems<-function(){
     QCsummary<<-rbind(QCsummary,c("Sex Problems",c(log[2],0,0,log[4])))
   }else{
     write.table(sexcheck[SexProblems,c(1,2)],"SexProblems.txt",quote=F,row.names=F,col.names=F)
-    system("plink --noweb --bfile GENmatic --remove SexProblems.txt --make-bed --out GENmatic")
+    ossystem(paste0(pd,"plink --noweb --bfile GENmatic --remove SexProblems.txt --make-bed --out GENmatic"))
     QCsummary<<-rbind(QCsummary,c("Sex Problems",parse_GENmatic.log()))
   }
   cat("This option uses X chromosome data to determine sex (i.e. based on heterozygosity rates) and flags individuals for whom the reported sex in the PED file does not match the estimated sex (given genomic data).\\\\")
@@ -153,28 +161,23 @@ remove_sex_problems<-function(){
 #'  Default is 0.05
 #'  @param individual.cutoff numeric corresponding to cutoff for missing
 #'  individuals. Default is 0.05
+#' @param pd directory where plink is. Do not need to specify if plink is in your path
+#' or working directory
 #'  @keywords GWAS
 #'  @export 
-remove_missing<-function(snp.cutoff=0.05,individual.cutoff=0.05){
+remove_missing<-function(snp.cutoff=0.05,individual.cutoff=0.05,pd=""){
   GENmaticGWASQCcount<<-GENmaticGWASQCcount+1
   cat(paste0("\\section*{",GENmaticGWASQCcount,": Identification of individuals/markers with a high missing rate}"))  
   
-  system("plink --noweb --bfile GENmatic --missing --out GENmatic")
+  ossystem(paste0(pd,"plink --noweb --bfile GENmatic --missing --out GENmatic"))
   lmiss<-read.table("GENmatic.lmiss",stringsAsFactors=F,colClasses=c("character","character","numeric","numeric","numeric"),header=T,comment.char = "`")
   fully_missing_snps<-length(lmiss[,5][lmiss[,5]==1])
-  missing_snps<-length(lmiss[,5][lmiss[,5]>=0.05])-fully_missing_snps
+  missing_snps<-length(lmiss[,5][lmiss[,5]>=snp.cutoff])-fully_missing_snps
   log<-parse_GENmatic.log()
   QCsummary<<-rbind(QCsummary,c("Fully Missing Snps",c(0,log[2],fully_missing_snps,log[4]-fully_missing_snps)))
   QCsummary<<-rbind(QCsummary,c(paste0(snp.cutoff*100,"% Missing Snps"),c(0,log[2],missing_snps,log[4]-fully_missing_snps-missing_snps)))
-  system(paste("plink --noweb --bfile GENmatic --geno",snp.cutoff,"--out GENmatic --make-bed"))  
-  #   system("plink --noweb --bfile GENmatic --geno 0.05 --out GENmatic")
-  #   system("sed '303342q;d' GENmatic.lmiss")
-  #   system("sed '303343q;d' GENmatic.lmiss")
-  #   system("sed '303344q;d' GENmatic.lmiss")
-  #   system("sed '303345q;d' GENmatic.lmiss")
-  #   system("sed '303346q;d' GENmatic.lmiss")
-  #   system("awk 'NR==303342q{print;exit}' GENmatic.lmiss")
-  system(paste("plink --noweb --bfile GENmatic --mind",individual.cutoff,"--out GENmatic --make-bed"))
+  ossystem(paste0(pd,"plink --noweb --bfile GENmatic --geno ",snp.cutoff," --out GENmatic --make-bed"))  
+  ossystem(paste0(pd,"plink --noweb --bfile GENmatic --mind ",individual.cutoff," --out GENmatic --make-bed"))
   log<-parse_GENmatic.log(mind=T)
   QCsummary<<-rbind(QCsummary,c(paste0(individual.cutoff*100,"% missing individuals"),log))
   cat(paste0(ifelse(fully_missing_snps==0,"No",fully_missing_snps),
@@ -184,7 +187,7 @@ remove_missing<-function(snp.cutoff=0.05,individual.cutoff=0.05){
              " Next Individuals with more than ",individual.cutoff*100," \\% SNPs missing were removed. ",ifelse(log[1]==0,"No",log[1]),
              " individuals were removed under this criterion.\\\\"))
   
-  system("plink --noweb --bfile GENmatic --missing --out GENmatic")
+  ossystem(paste0(pd,"plink --noweb --bfile GENmatic --missing --out GENmatic"))
   imiss<-read.table("GENmatic.imiss",stringsAsFactors=F,header=T,comment.char = "`")
   
   lmiss$logF_MISS = log10(lmiss$F_MISS);
@@ -212,20 +215,26 @@ remove_missing<-function(snp.cutoff=0.05,individual.cutoff=0.05){
 #' specified IBS
 #' @param cutoff numeric corresponding to cutoff ibs.
 #' Default is 0.25.
+#' @param pd directory where plink is. Do not need to specify if plink is in your path
+#' or working directory
+#' @param skip boolean indicating if you want to skip getting the GENmatic.genome file. Use TRUE
+#' only if you want to redo a previous QC in the same sequence and already have the file.
 #' @keywords GWAS
 #' @export 
-remove_relatives<-function(cutoff=0.25){
+remove_relatives<-function(cutoff=0.25,pd="",skip=F){
   GENmaticGWASQCcount<<-GENmaticGWASQCcount+1
   cat(paste0("\\section*{",GENmaticGWASQCcount,": Identification of duplicated or related individuals}"),
       "To detect duplicated or related individuals, identity by state is calculated for each pair of individuals. If two individuals are identified as relatives, as defined by having IBS$\\geq$",cutoff," the one with the higher sample number was removed.") 
-  system("plink --noweb --bfile GENmatic --indep 50 5 2 --out GENmatic")
-  system("plink --noweb --bfile GENmatic --extract GENmatic.prune.in --genome --out GENmatic")
+  if(!skip){
+  ossystem(paste0(pd,"plink --noweb --bfile GENmatic --indep 50 5 2 --out GENmatic"))
+  ossystem(paste0(pd,"plink --noweb --bfile GENmatic --extract GENmatic.prune.in --genome --out GENmatic"))
+  }
   ibs = read.table("GENmatic.genome",header=T,stringsAsFactors=F)
   ibs<-ibs[ibs$PI_HAT >= cutoff,c(1,2,3,4,10),drop=F]
   if(nrow(ibs)!=0){
     first_degree_relatives<-ibs[,c(3,4)]
     write.table(first_degree_relatives,"first_degree_relatives.txt",quote=FALSE,col.names=F,row.names=F)
-    system("plink --noweb --bfile GENmatic  --remove first_degree_relatives.txt --out GENmatic --make-bed")
+    ossystem(paste0(pd,"plink --noweb --bfile GENmatic  --remove first_degree_relatives.txt --out GENmatic --make-bed"))
     cat("People Removed in this step are in bold and listed in the following table.")
     colnames(ibs)
     colnames(ibs)<-sanitizestr(colnames(ibs))
@@ -250,15 +259,17 @@ remove_relatives<-function(cutoff=0.25){
 #' @param SD numeric corresponding to the numer of SD away
 #' from the mean we will choose as cutoff. Default is 6.
 #' @keywords GWAS
+#' @param pd directory where plink is. Do not need to specify if plink is in your path
+#' or working directory
 #' @export 
-remove_heterozygocity<-function(SD=6){
+remove_heterozygocity<-function(SD=6,pd=""){
   GENmaticGWASQCcount<<-GENmaticGWASQCcount+1
   cat(paste0("\\section*{",GENmaticGWASQCcount,": Identification of individuals with outlying heterozygosity rate}"))  
   
   cat("The outliers in the heterozygosity rate might be indicative of DNA sample contamination or inbreeding.
       The following plot shows the heterozygosity rate of the individuals in our CRC data, and the horizontal dashed lines represent",SD,"standard deviations from the mean.\\\\")
-  system("plink --noweb --bfile GENmatic --het --out GENmatic")
-  system("plink --noweb --bfile GENmatic --missing --out GENmatic")
+  ossystem(paste0(pd,"plink --noweb --bfile GENmatic --het --out GENmatic"))
+  ossystem(paste0(pd,"plink --noweb --bfile GENmatic --missing --out GENmatic"))
   
   
   imiss <- read.table("GENmatic.imiss",h=T);
@@ -283,7 +294,7 @@ remove_heterozygocity<-function(SD=6){
   hetero_remove<-het[het$meanHet<low | het$meanHet>high, c("FID","IID")]
   if(nrow(hetero_remove)>0){
     write.table(hetero_remove,"hetero_remove.txt",quote=FALSE,col.names=F,row.names=F);
-    system("plink --noweb --bfile GENmatic --remove hetero_remove.txt --out GENmatic --make-bed")
+    ossystem(paste0(pd,"plink --noweb --bfile GENmatic --remove hetero_remove.txt --out GENmatic --make-bed"))
     #QCsummary[7,-1]<<-parse_GENmatic.log()  
     QCsummary<<-rbind(QCsummary,c(paste0("Heterozygocity Rate (-/+ ",SD,"SD)"),parse_GENmatic.log()))
     cat("\n","The following people were removed for having heterozygosity rate",SD,"standard deviations form the mean:")
@@ -295,50 +306,7 @@ remove_heterozygocity<-function(SD=6){
   }
   
 }
-prepare_hapmap<-function(){
-  #   system("plink --noweb --bfile GENmatic --indep-pairwise 50 5 0.2 --out GENmaticHM")
-  # system("plink --noweb --bfile GENmaticHM --extract GENmaticHM.prune.in --recode --out GENmaticHM") 
-  #   system("plink --noweb --file hapmap3 --filter-founders --recode --make-bed --out hapmap")
-  #   system("plink --noweb --bfile hapmap --extract GENmaticHM.prune.in --make-bed --out hapmap")
-  #   system("awk '{print $2}' hapmap.bim > commonsnp.txt")
-  #   system("plink --noweb --file GENmaticHM --extract commonsnp.txt --make-bed --out GENmaticHM")
-  #   system("plink --noweb --bfile GENmaticHM --bmerge hapmap.bed hapmap.bim hapmap.fam --make-bed --out hapmap")
-  #   system("plink --noweb --bfile hapmap1 --flip gwashapmap.missnp --make-bed --out hapmap2")
-  # /plink --noweb --bfile hapmap2 --freq --out hapmapfreq
-  # /plink --noweb --bfile gwas10 --freq --out gwasfreq
-  
-  system("plink --noweb --bfile GENmatic --indep-pairwise 50 5 0.2 --out gwas8")
-  system("plink --noweb --bfile GENmatic --extract gwas8.prune.in --recode --out gwas9")
-  system("plink --noweb --file hapmaporigional --filter-founders --recode --make-bed --out hapmap")
-  #1457897 markers, 1198 founders 
-  #extract gwas independent SNPs: 160500 SNPS totally
-  system("plink --noweb --bfile ./hapmap --extract gwas8.prune.in --make-bed --out hapmap1")
-  # there are 105865 SNPs
-  system("awk '{print $2}' ./hapmap1.bim > ./commonsnp.txt")
-  system("plink --noweb --file gwas9 --extract commonsnp.txt --make-bed --out gwas10")
-  system("plink --noweb --bfile gwas10 --bmerge hapmap1.bed hapmap1.bim hapmap1.fam --make-bed --out gwashapmap")
-  system("plink --noweb --bfile hapmap1 --flip gwashapmap.missnp --make-bed --out hapmap2")
-  system("plink --noweb --bfile hapmap2 --freq --out hapmapfreq")
-  system("plink --noweb --bfile gwas10 --freq --out gwasfreq")
-  system("join -1 2 -2 2 hapmapfreq.frq gwasfreq.frq > mergefrq.txt")
-  system("awk '{print $1,$5,$10}' ./mergefrq.txt > ./mafreq.txt")
-  system("cat ./mafreq.txt | awk 'NR>1 {print $0 \" \" ($2-$3)}' ./mafreq.txt > mafcomp.txt")
-  system("cat ./mafcomp.txt | awk '($4 > 0.2) || ($4 < -0.2) {print $0}' ./mafcomp.txt > ./snp_bigdif.txt")
-  system("wc -l ./snp_bigdif.txt")
-  # 8475 SNPs
-  system("awk '{print $1}' ./snp_bigdif.txt > ./snpid_bigdif.txt")
-  system("cat ./mafcomp.txt | awk '($2 > 0.5) {print $0}' ./mafcomp.txt > ./snp_nomaf1.txt")
-  system("cat ./mafcomp.txt | awk '($3 > 0.5) {print $0}' ./mafcomp.txt > ./snp_nomaf2.txt")
-  system("plink --noweb --bfile gwas10 --bmerge hapmap2.bed hapmap2.bim hapmap2.fam --exclude snpid_bigdif.txt --make-bed --out gwashapmap1")
-  # There's still one SNP: rs2862907 not able to be merged because of mis-matching strand, 
-  system("plink --noweb --bfile gwas10 --exclude gwashapmap1.missnp --make-bed --out gwas11")
-  system("plink --noweb --bfile gwas11 --exclude snpid_bigdif.txt --make-bed --out gwas12")
-  system("plink --noweb --bfile hapmap2 --exclude gwashapmap1.missnp --make-bed --out hapmap3")
-  system("plink --noweb --bfile hapmap3 --exclude snpid_bigdif.txt --make-bed --out hapmap4")
-  system("plink --noweb --bfile gwas12 --bmerge hapmap4.bed hapmap4.bim hapmap4.fam --make-bed --out gwashapmap2")
-  # 97389SNPs
-  system("plink --noweb --file gwas9 --extract commonsnp.txt --make-bed --out ")
-}
+
 #' End GWAS QC
 #' 
 #' Outputs summary of QC process. There are no paramaters.

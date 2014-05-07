@@ -3,11 +3,17 @@
 \alias{remove_relatives}
 \title{Remove relatives}
 \usage{
-remove_relatives(cutoff = 0.25)
+remove_relatives(cutoff = 0.25, pd = "", skip = F)
 }
 \arguments{
 \item{cutoff}{numeric corresponding to cutoff ibs.
 Default is 0.25.}
+
+\item{pd}{directory where plink is. Do not need to specify if plink is in your path
+or working directory}
+
+\item{skip}{boolean indicating if you want to skip getting the GENmatic.genome file. Use TRUE
+only if you want to redo a previous QC in the same sequence and already have the file.}
 }
 \description{
 Removes the larger ID number for all pairs of individual over

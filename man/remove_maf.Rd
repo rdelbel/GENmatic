@@ -3,10 +3,13 @@
 \alias{remove_maf}
 \title{Removes all snps with MAF below cutoff}
 \usage{
-remove_maf(cutoff = 0.05)
+remove_maf(cutoff = 0.05, pd = "")
 }
 \arguments{
 \item{cutoff}{numeric indicating the MAF cutoff to use}
+
+\item{pd}{directory where plink is. Do not need to specify if plink is in your path
+or working directory}
 }
 \description{
 Removes all snps with MAF below cutoff

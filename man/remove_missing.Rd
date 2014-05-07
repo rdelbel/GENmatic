@@ -3,7 +3,7 @@
 \alias{remove_missing}
 \title{Remove snps and people with too many missing}
 \usage{
-remove_missing(snp.cutoff = 0.05, individual.cutoff = 0.05)
+remove_missing(snp.cutoff = 0.05, individual.cutoff = 0.05, pd = "")
 }
 \arguments{
 \item{snp.cutoff}{numeric corresponding to cutoff for missing snps.
@@ -11,6 +11,9 @@ Default is 0.05}
 
 \item{individual.cutoff}{numeric corresponding to cutoff for missing
 individuals. Default is 0.05}
+
+\item{pd}{directory where plink is. Do not need to specify if plink is in your path
+or working directory}
 }
 \description{
 First removed 100% missing snps, then missing snps, then

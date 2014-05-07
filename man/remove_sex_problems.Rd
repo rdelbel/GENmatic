@@ -3,10 +3,14 @@
 \alias{remove_sex_problems}
 \title{Remove people with sex problems}
 \usage{
-remove_sex_problems()
+remove_sex_problems(pd = "")
+}
+\arguments{
+\item{pd}{directory where plink is. Do not need to specify if plink is in your path
+or working directory}
 }
 \description{
-Remove people with sex problems. This function takes no paramaters.
+Remove people with sex problems.
 }
 \keyword{GWAS}
 
