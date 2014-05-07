@@ -11,6 +11,10 @@ setwd(wd)
 source(paste0(scratch,"GENmatic/Fitting.R"))
 data=read.csv(paste0(wd,datafile))
 
+######################################
+##### START TO EDIT THE FILE HERE#####
+######################################
+
 #Name of directory in scinet with plink (use trailing /)
 pd="/home/w/wxu/oespinga/software/plink/plink-1.07-x86_64/"
 

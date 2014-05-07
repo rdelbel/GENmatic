@@ -68,28 +68,29 @@ remove_maf<-function(cutoff=0.05,pd=""){
 
 #' Initialize GWAS Quality Control
 #' 
-#' Looks in current directory for dirty.bed dirty.fam dirty.bin.
+#' Looks in current directory for ifile.bed, ifile.bim, ifile.fam.
 #' Reads these files to get initial data. Saves new files as
 #' GENmatic.bed/fam/bin so that we do not modify origional data
 #' Sets up 2 secret global variables for the rest of the QC process.
-#' This function takes no paramaters
+#'
 #' @param pd directory where plink is. Do not need to specify if plink is in your path
 #' or working directory
 #' @keywords GWAS
 #' @export
 initiate_QC<-function(ifile,pd=""){
-  cat("\\section*{1: Identification of Heterozygous Haploid Genotypes} All Heterozygous Haploid Genotypes were removed. ")      
+  #cat("\\section*{1: Identification of Heterozygous Haploid Genotypes} All Heterozygous Haploid Genotypes were removed. ")      
   ossystem(paste0(pd,"plink --noweb --bfile ",ifile," --set-hh-missing --out GENmatic  --make-bed"))
   result <- t(data.frame(parse_GENmatic.log(), stringsAsFactors = F))
   result <- data.frame("Start", result, stringsAsFactors = F)
   colnames(result) <- c("Step", "Individual Removed", "Individual Remaining", 
                         "SNP Removed", "SNP Remaining")
   rownames(result) <- NULL
-  result<-rbind(result,c("Heterozygous Haploid",parse_GENmatic.log(hh=T)))
-  QCsummary <<- result
-  GENmaticGWASQCcount <<- 1
+  result=result[-1,]
+  #result<-rbind(result,c("Heterozygous Haploid",parse_GENmatic.log(hh=T)))
+  #QCsummary <<- result
+  GENmaticGWASQCcount <<- 0
   
-  cat(ifelse(QCsummary[2,3]=="0","No",QCsummary[2,4]), "snps were removed this way")
+  #cat(ifelse(QCsummary[2,3]=="0","No",QCsummary[2,4]), "snps were removed this way")
 }
 
 
