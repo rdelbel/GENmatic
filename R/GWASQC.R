@@ -87,7 +87,7 @@ initiate_QC<-function(ifile,pd=""){
   rownames(result) <- NULL
   result=result[-1,]
   #result<-rbind(result,c("Heterozygous Haploid",parse_GENmatic.log(hh=T)))
-  #QCsummary <<- result
+  QCsummary <<- result
   GENmaticGWASQCcount <<- 0
   
   #cat(ifelse(QCsummary[2,3]=="0","No",QCsummary[2,4]), "snps were removed this way")
