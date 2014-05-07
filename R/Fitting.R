@@ -345,6 +345,7 @@ GENfit<-function(id,outcome,covariates=NULL,strata=NULL,type,kind="additive",
   t2=which(colnames(a)=="BP")
   a=a[,c(t1,1,t2,setdiff(1:ncol(a),c(1,t1,t2)))]  
   finalfile=paste0(wd,ofile,"_results.txt")
+  a$NMISS=NULL
   write.table(a,finalfile,row.names=F,quote=F)   
     if(manhattan) manhattan(finalfile)
     if(qq) qq(finalfile)    
