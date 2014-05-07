@@ -427,9 +427,7 @@ make_covar_pheno<-function(type,id,outcome,covar=NULL,strata=NULL,cname="covar",
       write.table(data.frame(id,cov),paste0(wd,cname,".txt"),quote=F,row.names=F)    
     }
     pheno=cbind(id,outcome)
-    print("ok1")
     write.table(pheno,paste0(wd,pname,".txt"),quote=F,row.names=F,col.names=F)
-    print("ok2")
   }
 } 
 
