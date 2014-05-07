@@ -1,3 +1,8 @@
+ossystem=function(x){
+ if(.Platform$OS.type=="windows") shell(x)
+ else system(x)
+}
+
 px<-function(x)
   print.xtable(xtable(x),include.rownames=F,table.placement="H",sanitize.text.function=identity)
 
@@ -131,10 +136,10 @@ a<-paste(a1,a2,a3,a4,a5,a6,sep="\n")
 plinktoR<-function(ifile,ofile=NULL,snps=NULL,pd="",wd=""){
   if(is.null(ofile)) ofile=ifile
   if(is.null(snps)){
-    system(paste0(pd,"plink --noweb  --recodeA --bfile ",wd,ifile," --out ",wd,ofile))
+    ossystem(paste0(pd,"plink --noweb  --recodeA --bfile ",wd,ifile," --out ",wd,ofile))
   }else{
     write.table(snps,"plinktoRsnps.txt",quote=F,row.names=F,col.names=F)
-    system(paste0(pd,"plink --noweb --extract plinktoRsnps.txt --recodeA --bfile ",wd,ifile," --out ",wd,ofile))
+    ossystem(paste0(pd,"plink --noweb --extract plinktoRsnps.txt --recodeA --bfile ",wd,ifile," --out ",wd,ofile))
   }
   table=read.table(paste0(wd,ofile,".raw"),head=T)[,-c(3,4,5,6)] 
   colnames(table)[-c(1,2)]=sapply(colnames(table)[-c(1,2)],function(name)substr(name,1,nchar(name)-2))
@@ -228,23 +233,23 @@ plinkfit<-function(ifile,ofile,type,covar,pd,wd){
     if(.Platform$OS.type=="windows") stop("can not use plink to fix coxph on windows")
     require(Rserve)
     Rserve(args="--no-save")    
-    system(paste0(pd,"plink --noweb --bfile ",wd,ifile,"  --covar ",wd,ofile,"_covar.txt  --pheno ",wd,ofile,"_pheno.txt --R ",wd,"Rplink.R --out ",wd,ofile))
-    system("kill -9 `ps -eo pid,args | grep Rserve | grep -v grep | awk '{print $1}'`")
+    ossystem(paste0(pd,"plink --noweb --bfile ",wd,ifile,"  --covar ",wd,ofile,"_covar.txt  --pheno ",wd,ofile,"_pheno.txt --R ",wd,"Rplink.R --out ",wd,ofile))
+    ossystem("kill -9 `ps -eo pid,args | grep Rserve | grep -v grep | awk '{print $1}'`")
     filename=paste0(wd,ofile,".auto.R")    
     fitted=read.table(filename,stringsAsFactors=F)
     colnames(fitted)=c("CHR","SNP","BP","A1","HR","L95","U95","P")
     write.table(fitted,filename,quote=F,row.names=F)
   }
   else if(type=="logistic"&!covar){
-    system(paste0(pd,"plink --noweb --bfile ",wd,ifile,"  --pheno ",wd,ofile,"_pheno.txt --assoc --ci 0.95  --out ",wd,ofile))
+    ossystem(paste0(pd,"plink --noweb --bfile ",wd,ifile,"  --pheno ",wd,ofile,"_pheno.txt --assoc --ci 0.95  --out ",wd,ofile))
   }
   else if(type=="logistic"&covar){
-    system(paste0(pd,"plink --noweb --bfile ",wd,ifile,"  --covar ",wd,ofile,"_covar.txt  --pheno ",wd,ofile,"_pheno.txt --logistic --ci 0.95 --hide-covar --out ",wd,ofile))
+    ossystem(paste0(pd,"plink --noweb --bfile ",wd,ifile,"  --covar ",wd,ofile,"_covar.txt  --pheno ",wd,ofile,"_pheno.txt --logistic --ci 0.95 --hide-covar --out ",wd,ofile))
   }else if(type=="linear"&!covar){
-    system(paste0(pd,"plink --noweb --bfile ",wd,ifile,"  --pheno ",wd,ofile,"_pheno.txt --assoc --ci 0.95  --out ",wd,ofile))
+    ossystem(paste0(pd,"plink --noweb --bfile ",wd,ifile,"  --pheno ",wd,ofile,"_pheno.txt --assoc --ci 0.95  --out ",wd,ofile))
     
   }else if(type=="linear"&covar){
-    system(paste0(pd,"plink --noweb --bfile ",wd,ifile,"  --covar ",wd,ofile,"_covar.txt   --pheno ",wd,ofile,"_pheno.txt --linear --ci 0.95 --hide-covar --out ",wd,ofile))
+    ossystem(paste0(pd,"plink --noweb --bfile ",wd,ifile,"  --covar ",wd,ofile,"_covar.txt   --pheno ",wd,ofile,"_pheno.txt --linear --ci 0.95 --hide-covar --out ",wd,ofile))
     
   }
 }
@@ -444,8 +449,8 @@ abline(h=0)
 #'@param wd directory that all files are located in. Is by default set to the current R working directory
 #'@export
 snpinfo<-function(ifile,pd,wd){
-  system(paste0(pd,"plink --noweb --bfile ",wd,ifile," --freq --out ",wd,ifile))
-  system(paste0(pd,"plink --noweb --bfile ",wd,ifile," --hardy --out ",wd,ifile))
+  ossystem(paste0(pd,"plink --noweb --bfile ",wd,ifile," --freq --out ",wd,ifile))
+  ossystem(paste0(pd,"plink --noweb --bfile ",wd,ifile," --hardy --out ",wd,ifile))
   f=read.table(paste0(wd,ifile,".frq"),stringsAsFactors=F,head=T)
   h=read.table(paste0(wd,ifile,".hwe"),stringsAsFactors=F,head=T)
   h=h[h$TEST=="ALL",!colnames(h)%in%c("A1","A2","CHR")]
