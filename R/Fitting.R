@@ -444,7 +444,7 @@ qq<-function(ifile,title="qq plot of p-values",...){
   results=read.table(ifile,head=T)
   obs=sort(results[,"P"],decreasing=F)
 ept=c(1:length(obs))/(length(obs))
-plot(-log10(ept),-log10(obs),col=4,xlab="Expected -log10(pvalue)",ylab="Observed -log10(pvalue)",title=title,...)
+plot(-log10(ept),-log10(obs),col=4,xlab="Expected -log10(pvalue)",ylab="Observed -log10(pvalue)",main=title,...)
 abline(0,1,col="red")
 }
 #' Create a qq plot of genetic analysis p-values
